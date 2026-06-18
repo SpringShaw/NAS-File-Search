@@ -1,0 +1,14 @@
+services:
+  nas-file-search:
+    build: .
+    container_name: nas-file-search
+    restart: always
+    ports:
+      - "8083:8083"
+    volumes:
+      - /:/nas/host:ro
+      - ./data:/app/data
+    environment:
+      - HOST=0.0.0.0
+      - PORT=8083
+      - DATA_DIR=/app/data
