@@ -1,40 +1,29 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" role="img" aria-labelledby="title desc">
-  <title id="title">NAS File Search project cover</title>
-  <desc id="desc">Search file names and document contents across NAS folders</desc>
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" role="img" aria-labelledby="title">
+  <title id="title">NAS 文件搜索封面</title>
   <defs>
-    <radialGradient id="softGlow" cx="80%" cy="22%" r="62%">
-      <stop offset="0" stop-color="#2563EB" stop-opacity=".18"/>
-      <stop offset=".58" stop-color="#14B8A6" stop-opacity=".08"/>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#F7FAFF"/>
+      <stop offset="1" stop-color="#DBEAFE"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="72%" cy="28%" r="55%">
+      <stop offset="0" stop-color="#2563EB" stop-opacity=".22"/>
+      <stop offset=".55" stop-color="#14B8A6" stop-opacity=".08"/>
       <stop offset="1" stop-color="#F7FAFF" stop-opacity="0"/>
     </radialGradient>
-    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
-      <feDropShadow dx="0" dy="20" stdDeviation="24" flood-color="#0F1B33" flood-opacity=".14"/>
-    </filter>
   </defs>
-  <rect width="1200" height="630" rx="44" fill="#F7FAFF"/>
-  <rect width="1200" height="630" rx="44" fill="url(#softGlow)"/>
-  <path d="M70 96 C250 30 374 74 514 44 C658 12 746 54 864 34 C982 14 1074 52 1130 108" fill="none" stroke="#0F1B33" stroke-opacity=".055" stroke-width="26" stroke-linecap="round"/>
-  <g filter="url(#shadow)">
-    <rect x="58" y="64" width="1084" height="502" rx="42" fill="white" fill-opacity=".76" stroke="white" stroke-width="2"/>
+  <rect width="1200" height="630" fill="url(#bg)"/>
+  <rect width="1200" height="630" fill="url(#glow)"/>
+  <g transform="translate(600 315)">
+    <circle cx="0" cy="0" r="148" fill="#FFFFFF" fill-opacity=".55"/>
+    <circle cx="0" cy="0" r="118" fill="#FFFFFF" fill-opacity=".72" stroke="#2563EB" stroke-width="6" stroke-opacity=".18"/>
+    <g transform="translate(-96 -78)">
+      <rect x="0" y="28" width="132" height="100" rx="18" fill="#FFFFFF" stroke="#0F1B33" stroke-width="6"/>
+      <path d="M0 52 h132" stroke="#0F1B33" stroke-width="5" opacity=".12"/>
+      <path d="M24 74 h48 M24 96 h72 M24 118 h56" stroke="#0F1B33" stroke-width="6" stroke-linecap="round" opacity=".22"/>
+      <path d="M36 28 l22 -24 h52 l24 24" fill="#FFFFFF" stroke="#14B8A6" stroke-width="6" stroke-linejoin="round"/>
+      <circle cx="148" cy="108" r="34" fill="#2563EB18" stroke="#2563EB" stroke-width="8"/>
+      <path d="M172 132 l28 28" stroke="#2563EB" stroke-width="10" stroke-linecap="round"/>
+    </g>
   </g>
-  <g transform="translate(90 118)">
-    <rect x="0" y="0" width="58" height="58" rx="18" fill="#2563EB"/>
-    <circle cx="42" cy="16" r="10" fill="#14B8A6"/>
-    <text x="78" y="24" font-family="Inter, Arial, sans-serif" font-size="20" font-weight="800" fill="#2563EB">SpringShaw/NAS-File-Search</text>
-    <text x="78" y="51" font-family="Inter, Arial, sans-serif" font-size="18" font-weight="650" fill="#0F1B33" opacity=".58">Private file search engine</text>
-  </g>
-  <text x="90" y="262" font-family="Inter, Arial, sans-serif" font-size="68" font-weight="900" fill="#0F1B33">NAS File Search</text>
-  <text x="92" y="318" font-family="Inter, Arial, sans-serif" font-size="27" font-weight="650" fill="#0F1B33" opacity=".70">Search file names and document contents across NAS folders</text>
-  <path d="M92 374 h390" stroke="#2563EB" stroke-width="10" stroke-linecap="round"/>
-  <path d="M92 399 h260" stroke="#14B8A6" stroke-width="10" stroke-linecap="round" opacity=".65"/>
-  <rect x="90" y="482" width="159" height="44" rx="22" fill="white" stroke="#0F1B33" stroke-opacity=".10"/><text x="109" y="511" font-family="Inter, Arial, sans-serif" font-size="18" font-weight="700" fill="#0F1B33" opacity=".72">NAS folders</text><rect x="263" y="482" width="203" height="44" rx="22" fill="white" stroke="#0F1B33" stroke-opacity=".10"/><text x="282" y="511" font-family="Inter, Arial, sans-serif" font-size="18" font-weight="700" fill="#0F1B33" opacity=".72">Full-text index</text><rect x="480" y="482" width="148" height="44" rx="22" fill="white" stroke="#0F1B33" stroke-opacity=".10"/><text x="499" y="511" font-family="Inter, Arial, sans-serif" font-size="18" font-weight="700" fill="#0F1B33" opacity=".72">Thumbnails</text><rect x="642" y="482" width="104" height="44" rx="22" fill="white" stroke="#0F1B33" stroke-opacity=".10"/><text x="661" y="511" font-family="Inter, Arial, sans-serif" font-size="18" font-weight="700" fill="#0F1B33" opacity=".72">Docker</text>
-  
-        <g transform="translate(700 148)">
-          <rect x="24" y="72" width="310" height="238" rx="30" fill="white" stroke="#0F1B33" stroke-width="8"/>
-          <path d="M24 112 h310" stroke="#0F1B33" stroke-width="8" opacity=".16"/>
-          <path d="M68 166 h86 M68 214 h164 M68 262 h118" stroke="#0F1B33" stroke-width="10" stroke-linecap="round" opacity=".38"/>
-          <path d="M102 72 l34 -46 h116 l40 46" fill="white" stroke="#14B8A6" stroke-width="8" stroke-linejoin="round"/>
-          <circle cx="300" cy="250" r="62" fill="#2563EB18" stroke="#2563EB" stroke-width="14"/>
-          <path d="M346 296 l62 62" stroke="#2563EB" stroke-width="18" stroke-linecap="round"/>
-        </g>
+  <text x="1080" y="560" text-anchor="end" font-family="Inter, Arial, sans-serif" font-size="220" font-weight="900" fill="#2563EB" opacity=".07">N</text>
 </svg>
