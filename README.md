@@ -77,6 +77,33 @@ pip install -r requirements.txt
 uvicorn app.main:app --reload --port 8083
 ```
 
+### 裸机部署（无 Docker）
+
+不想用 Docker 时，可直接在宿主机运行。一键脚本：
+
+```bash
+./run.sh
+```
+
+脚本会自动构建前端、安装后端依赖，并以**裸机模式**启动（`NAS_HOST_PREFIX` 置空，直接使用真实绝对路径，无需 `/nas/host` 前缀）。
+
+手动运行等价于：
+
+```bash
+# 1. 构建前端（产物输出到 backend/static）
+cd frontend && npm install && npm run build && cd ..
+
+# 2. 安装后端依赖（建议用虚拟环境）
+cd backend && pip install -r requirements.txt
+
+# 3. 以裸机模式启动：前缀置空，直接使用真实路径
+NAS_HOST_PREFIX="" DATA_DIR="$(pwd)/../data" uvicorn app.main:app --host 0.0.0.0 --port 8083
+```
+
+启动后访问 `http://localhost:8083`，在「设置」中添加要搜索的真实目录（如 `/mnt/nas/photos`，**裸机模式直接填真实路径**，无需加前缀）。
+
+> 让服务常驻后台可用 `systemd` / `nohup` / `supervisor` 等托管 `uvicorn` 进程。
+
 ## 配置说明
 
 | 环境变量 | 默认值 | 说明 |
@@ -87,6 +114,7 @@ uvicorn app.main:app --reload --port 8083
 | API_KEY | （空） | API Key 认证，留空不启用；公网部署建议设置长随机串 |
 | RATE_LIMIT | 120 | 每个 IP 在 RATE_WINDOW 秒内最大请求数，0 禁用 |
 | RATE_WINDOW | 60 | 速率限制窗口（秒） |
+| NAS_HOST_PREFIX | /nas/host | 宿主机路径前缀。Docker 默认 `/nas/host`；**裸机部署设为空** 直接用真实路径 |
 
 Docker 部署时，宿主机根目录 `/` 以只读方式挂载到容器 `/nas/host`，Web 界面中添加目录时使用宿主机原始路径即可，程序自动转换。如需收窄挂载范围，可把 `/:/nas/host:ro` 改为挂载具体子目录。
 
@@ -119,3 +147,18 @@ Docker 部署时，宿主机根目录 `/` 以只读方式挂载到容器 `/nas/h
 - 🎨 Apple 风格简洁界面，响应式适配桌面与移动端
 - 🔒 数据完全留在本地，索引内容不上传任何服务器
 - 🌐 中英文双语，自动识别浏览器语言
+
+## 项目结构
+
+```
+NAS-File-Search/
+├── backend/app/         # FastAPI 后端（main/config/models/indexer/search/security）
+├── frontend/src/        # Vue 3 前端（components/services/i18n）
+├── docker-compose.yml   # Docker 部署
+├── run.sh              # 裸机部署一键脚本
+└── README.md / README.en.md
+```
+
+## License
+
+[MIT](./LICENSE)

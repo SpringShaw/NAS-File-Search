@@ -35,21 +35,57 @@ def safe_join(base: str, target: str) -> str:
 
 
 def assert_within_nas_host(path: str) -> str:
-    """校验 path 必须位于 NAS_HOST_PREFIX 子树内，返回 realpath。
+    """校验 path 必须位于允许的目录范围内，返回 realpath。
 
     所有可访问宿主机文件内容的接口（如缩略图）都必须先经过该校验，
-    防止读取容器内或宿主机根目录以外的任意文件。
+    防止读取允许范围以外的任意文件。
+
+    - Docker 模式（NAS_HOST_PREFIX 非空，如 /nas/host）：
+      路径必须位于该前缀子树内。
+    - 裸机模式（NAS_HOST_PREFIX 为空）：
+      没有统一前缀，改为要求路径必须落在某个已配置的搜索目录子树内，
+      避免退化成任意文件读取。
     """
     if not path:
         raise HTTPException(status_code=400, detail="路径不能为空")
-    root = os.path.realpath(NAS_HOST_PREFIX)
     real = os.path.realpath(path)
-    try:
-        if os.path.commonpath([root, real]) != root:
+
+    if NAS_HOST_PREFIX:
+        root = os.path.realpath(NAS_HOST_PREFIX)
+        if not _is_within(real, root):
             raise HTTPException(status_code=403, detail="路径超出允许范围")
-    except ValueError:
+        return real
+
+    # 裸机模式：校验 path 是否在任一已配置搜索目录内
+    if not _within_configured_dirs(real):
         raise HTTPException(status_code=403, detail="路径超出允许范围")
     return real
+
+
+def _is_within(target: str, root: str) -> bool:
+    """判断 target 是否位于 root 子树内（两者均应为 realpath）。"""
+    try:
+        return os.path.commonpath([root, target]) == root
+    except ValueError:
+        # 不同驱动器或无法求公共前缀
+        return False
+
+
+def _within_configured_dirs(real_path: str) -> bool:
+    """裸机模式下，校验 real_path 是否落在某个已启用的搜索目录子树内。"""
+    # 延迟导入，避免与 models 形成循环依赖
+    from .models import get_db
+
+    db = get_db()
+    try:
+        rows = db.execute("SELECT path FROM dirs WHERE enabled = 1").fetchall()
+    finally:
+        db.close()
+    for row in rows:
+        root = os.path.realpath(row["path"])
+        if _is_within(real_path, root):
+            return True
+    return False
 
 
 # ---------------------------------------------------------------------------

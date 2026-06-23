@@ -77,6 +77,33 @@ pip install -r requirements.txt
 uvicorn app.main:app --reload --port 8083
 ```
 
+### Bare-Metal Deployment (no Docker)
+
+To run directly on the host without Docker, use the one-shot script:
+
+```bash
+./run.sh
+```
+
+It builds the frontend, installs backend dependencies, and starts in **bare-metal mode** (`NAS_HOST_PREFIX` empty, using real absolute paths without the `/nas/host` prefix).
+
+Manual equivalent:
+
+```bash
+# 1. Build frontend (output goes to backend/static)
+cd frontend && npm install && npm run build && cd ..
+
+# 2. Install backend deps (a virtualenv is recommended)
+cd backend && pip install -r requirements.txt
+
+# 3. Start in bare-metal mode: empty prefix, real paths
+NAS_HOST_PREFIX="" DATA_DIR="$(pwd)/../data" uvicorn app.main:app --host 0.0.0.0 --port 8083
+```
+
+Open `http://localhost:8083`, then add real directories in **Settings** (e.g. `/mnt/nas/photos` — **enter the real path directly** in bare-metal mode, no prefix needed).
+
+> To keep the service running in the background, manage the `uvicorn` process with `systemd` / `nohup` / `supervisor`.
+
 ## Configuration
 
 | Env var | Default | Description |
@@ -87,6 +114,7 @@ uvicorn app.main:app --reload --port 8083
 | API_KEY | (empty) | API Key auth; empty = disabled. Set a long random string for public deploy |
 | RATE_LIMIT | 120 | Max requests per IP within RATE_WINDOW; 0 disables |
 | RATE_WINDOW | 60 | Rate-limit window in seconds |
+| NAS_HOST_PREFIX | /nas/host | Host path prefix. `/nas/host` for Docker; **set empty for bare-metal** to use real paths |
 
 In Docker, the host root `/` is mounted read-only into the container at `/nas/host`. Use the original host path when adding directories in the web UI — the app converts it automatically. To narrow the attack surface, replace `/:/nas/host:ro` with a specific sub-directory mount.
 
@@ -119,3 +147,18 @@ In Docker, the host root `/` is mounted read-only into the container at `/nas/ho
 - 🎨 Apple-style clean UI, responsive for desktop and mobile
 - 🔒 Data stays local — indexed content never leaves your machine
 - 🌐 Bilingual, auto-detects browser language
+
+## Project Structure
+
+```
+NAS-File-Search/
+├── backend/app/         # FastAPI backend (main/config/models/indexer/search/security)
+├── frontend/src/        # Vue 3 frontend (components/services/i18n)
+├── docker-compose.yml   # Docker deployment
+├── run.sh              # Bare-metal one-shot script
+└── README.md / README.en.md
+```
+
+## License
+
+[MIT](./LICENSE)

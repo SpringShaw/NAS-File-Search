@@ -102,16 +102,25 @@ async def api_get_dirs():
 
 
 def to_container_path(host_path: str) -> str:
-    """将宿主机路径转换为容器内路径，自动添加 /nas/host 前缀。"""
+    """将宿主机路径转换为容器内路径。
+
+    Docker 模式自动添加 NAS_HOST_PREFIX 前缀；裸机模式（前缀为空）直接使用原路径。
+    """
     host_path = host_path.strip()
     if not host_path:
         return host_path
-    # 已经是容器路径的直接返回
-    if host_path.startswith(NAS_HOST_PREFIX):
+    # 裸机模式：不做前缀转换，使用真实绝对路径
+    if not NAS_HOST_PREFIX:
         return host_path
-    # 以 / 开头但没有 /nas/host 前缀的，自动添加
-    if host_path.startswith("/"):
-        return NAS_HOST_PREFIX + host_path
+    # 规范化路径，折叠 .. 防止路径遍历绕过前缀检查；统一转为 / 分隔符保证跨平台一致
+    normalized = os.path.normpath(host_path).replace("\\", "/")
+    prefix = os.path.normpath(NAS_HOST_PREFIX).replace("\\", "/")
+    # 精确匹配前缀或前缀 + 路径分隔符，防止 /nas/host1 误匹配 /nas/host
+    if normalized == prefix or normalized.startswith(prefix + "/"):
+        return normalized
+    # 以 / 开头但没有前缀的，自动添加
+    if normalized.startswith("/"):
+        return prefix + normalized
     return host_path
 
 

@@ -22,8 +22,9 @@ THUMBNAIL_SIZE = (200, 200)
 FULLTEXT_MAX_SIZE = 5 * 1024 * 1024  # 5MB max for fulltext indexing
 MAX_FILE_SIZE = 100 * 1024 * 1024  # 100MB
 
-# Docker 容器内宿主机根目录前缀
-NAS_HOST_PREFIX = "/nas/host"
+# 宿主机根目录前缀。Docker 部署时为 /nas/host（宿主机 / 挂载到容器该路径）；
+# 裸机部署时设为空字符串，直接使用真实绝对路径，不做前缀转换。
+NAS_HOST_PREFIX = os.environ.get("NAS_HOST_PREFIX", "/nas/host").strip()
 
 TEXT_EXTENSIONS = {
     "txt", "log", "md", "py", "js", "ts", "jsx", "tsx",
