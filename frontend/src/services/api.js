@@ -1,10 +1,42 @@
 const API_BASE = ''
 
+function getApiKey() {
+  try {
+    return localStorage.getItem('nas_api_key') || ''
+  } catch {
+    return ''
+  }
+}
+
+export function setApiKey(key) {
+  try {
+    if (key) localStorage.setItem('nas_api_key', key)
+    else localStorage.removeItem('nas_api_key')
+  } catch {
+    /* 忽略隐私模式下 localStorage 不可用 */
+  }
+}
+
+let prompting = false
+
 async function request(url, options = {}) {
-  const res = await fetch(API_BASE + url, {
-    headers: { 'Content-Type': 'application/json' },
-    ...options,
-  })
+  const headers = { ...(options.headers || {}), 'Content-Type': 'application/json' }
+  const apiKey = getApiKey()
+  if (apiKey) headers['X-API-Key'] = apiKey
+  const res = await fetch(API_BASE + url, { ...options, headers })
+
+  // 后端启用了 API Key 认证但本地未配置或配置错误：提示输入并重试一次
+  if (res.status === 401 && !prompting && !options._retried) {
+    prompting = true
+    const key = window.prompt('此服务启用了 API Key 认证，请输入 API Key：')
+    prompting = false
+    if (key) {
+      setApiKey(key.trim())
+      return request(url, { ...options, _retried: true })
+    }
+    throw new Error('需要有效的 API Key')
+  }
+
   if (!res.ok) {
     const err = await res.json().catch(() => ({ detail: res.statusText }))
     throw new Error(err.detail || 'Request failed')

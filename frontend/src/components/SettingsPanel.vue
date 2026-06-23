@@ -1,5 +1,9 @@
 <template>
-  <div class="fixed inset-0 z-50 bg-black/30 backdrop-blur-sm flex items-start justify-center pt-20 px-4" @click.self="$emit('close')">
+  <div
+    class="fixed inset-0 z-50 bg-black/30 backdrop-blur-sm flex items-start justify-center pt-20 px-4"
+    @mousedown.self="onMaskMouseDown"
+    @mouseup.self="onMaskMouseUp"
+  >
     <div class="bg-white rounded-2xl shadow-xl w-full max-w-lg overflow-hidden fade-in-up">
       <!-- Header -->
       <div class="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
@@ -56,6 +60,23 @@
             </div>
           </div>
         </div>
+
+        <!-- API Key 设置 -->
+        <div class="mt-4 pt-4 border-t border-gray-100">
+          <label class="text-sm font-medium text-[#1d1d1f] block mb-2">🔒 API Key</label>
+          <div class="flex items-center gap-2">
+            <span class="flex-1 text-xs" :class="apiKeySet ? 'text-gray-500' : 'text-gray-400'">
+              {{ apiKeySet ? '已设置（访问受保护）' : '未设置（未启用认证）' }}
+            </span>
+            <button @click="editApiKey" class="px-3 py-1 text-xs bg-gray-100 rounded-lg hover:bg-gray-200 transition">
+              {{ apiKeySet ? '修改' : '设置' }}
+            </button>
+            <button v-if="apiKeySet" @click="clearApiKey" class="px-3 py-1 text-xs bg-gray-100 rounded-lg hover:bg-red-50 hover:text-red-500 transition">
+              清除
+            </button>
+          </div>
+          <p class="text-xs text-gray-400 mt-1">仅当服务端配置了 API_KEY 环境变量时才生效</p>
+        </div>
       </div>
     </div>
   </div>
@@ -63,7 +84,7 @@
 
 <script>
 import { ref, onMounted } from 'vue'
-import { api } from '../services/api.js'
+import { api, setApiKey } from '../services/api.js'
 
 export default {
   name: 'SettingsPanel',
@@ -73,6 +94,37 @@ export default {
     const newDir = ref('')
     const adding = ref(false)
     const addError = ref('')
+    const apiKeySet = ref(false)
+
+    // 弹窗遮罩关闭：仅当 mousedown 与 mouseup 都落在遮罩层（.self）时才触发，
+    // 避免在弹窗内拖选文字超出范围时误触发关闭
+    let mouseDownOnMask = false
+    const onMaskMouseDown = () => { mouseDownOnMask = true }
+    const onMaskMouseUp = () => {
+      if (mouseDownOnMask) {
+        mouseDownOnMask = false
+        emit('close')
+      }
+    }
+
+    const refreshApiKeySet = () => {
+      try {
+        apiKeySet.value = !!localStorage.getItem('nas_api_key')
+      } catch {
+        apiKeySet.value = false
+      }
+    }
+    const editApiKey = () => {
+      const key = window.prompt('请输入 API Key：')
+      if (key !== null) {
+        setApiKey(key.trim())
+        refreshApiKeySet()
+      }
+    }
+    const clearApiKey = () => {
+      setApiKey('')
+      refreshApiKeySet()
+    }
 
     const fetchDirs = async () => {
       try {
@@ -108,9 +160,15 @@ export default {
       }
     }
 
-    onMounted(fetchDirs)
+    onMounted(() => {
+      refreshApiKeySet()
+      fetchDirs()
+    })
 
-    return { dirs, newDir, adding, addError, addDir, deleteDir }
+    return {
+      dirs, newDir, adding, addError, apiKeySet,
+      onMaskMouseDown, onMaskMouseUp, editApiKey, clearApiKey, addDir, deleteDir,
+    }
   },
 }
 </script>

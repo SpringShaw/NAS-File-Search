@@ -7,7 +7,7 @@ from datetime import datetime
 from .config import (
     FILE_CATEGORIES, TEXT_EXTENSIONS, FULLTEXT_MAX_SIZE,
     WHOOSH_INDEX_DIR, THUMBNAIL_DIR, THUMBNAIL_SIZE,
-    EXT_TO_CATEGORY, ensure_dirs,
+    EXT_TO_CATEGORY, MAX_IMAGE_PIXELS, ensure_dirs,
 )
 from .models import get_db
 
@@ -93,8 +93,13 @@ def generate_thumbnail(filepath, thumbnail_path):
     """Generate a thumbnail for image files."""
     try:
         from PIL import Image
+        Image.MAX_IMAGE_PIXELS = MAX_IMAGE_PIXELS  # 防解压炸弹
         os.makedirs(os.path.dirname(thumbnail_path), exist_ok=True)
         with Image.open(filepath) as img:
+            # 再次校验尺寸，拒绝异常大图
+            if img.width * img.height > MAX_IMAGE_PIXELS:
+                logger.warning(f"Image too large, skip thumbnail: {filepath}")
+                return False
             img.thumbnail(THUMBNAIL_SIZE, Image.LANCZOS)
             if img.mode in ("RGBA", "P"):
                 img = img.convert("RGB")
@@ -197,6 +202,16 @@ class Indexer:
             rebuild_whoosh_index()
         except Exception as e:
             logger.warning(f"Whoosh index rebuild failed (non-fatal): {e}")
+
+        # 清理旧缩略图缓存（重建后文件路径可能变化，旧缓存失效）
+        try:
+            for name in os.listdir(THUMBNAIL_DIR):
+                p = os.path.join(THUMBNAIL_DIR, name)
+                if os.path.isfile(p):
+                    os.remove(p)
+        except OSError as e:
+            logger.warning(f"Failed to clean thumbnail cache: {e}")
+
         logger.info(f"Index rebuild complete: {total} files, {fulltext_count} fulltext")
 
     def get_status(self):

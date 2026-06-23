@@ -6,9 +6,16 @@ services:
     ports:
       - "8083:8083"
     volumes:
+      # 将宿主机根目录只读挂载到容器 /nas/host，以便索引任意目录。
+      # 后端已强制限定文件访问（缩略图/静态文件）只能在 /nas/host 子树内。
+      # 如需进一步收窄攻击面，可改为挂载具体子目录，例如：- /mnt/nas:/nas/host:ro
       - /:/nas/host:ro
       - ./data:/app/data
     environment:
       - HOST=0.0.0.0
       - PORT=8083
       - DATA_DIR=/app/data
+      # 安全配置（可选）：公网部署强烈建议设置 API_KEY 为一个足够长的随机字符串
+      # - API_KEY=change-me-to-a-long-random-string
+      # - RATE_LIMIT=120
+      # - RATE_WINDOW=60

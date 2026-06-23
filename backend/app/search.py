@@ -69,14 +69,19 @@ def rebuild_whoosh_index():
     logger.info(f"Whoosh index rebuilt: {count} documents")
 
 
+def _escape_like(query: str) -> str:
+    """转义 SQLite LIKE 通配符，避免用户输入的 % 和 _ 被当作元字符。"""
+    return query.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+
+
 def search_files(query: str, file_type: str = "all", page: int = 1, size: int = 20):
     """Search files by name (SQLite) and content (Whoosh)."""
     db = get_db()
     offset = (page - 1) * size
-    like_q = f"%{query}%"
+    like_q = "%" + _escape_like(query) + "%"
 
     # --- Filename search in SQLite ---
-    where = "WHERE (file_name LIKE ? OR file_path LIKE ?)"
+    where = "WHERE (file_name LIKE ? ESCAPE '\\' OR file_path LIKE ? ESCAPE '\\')"
     params = [like_q, like_q]
     if file_type and file_type != "all":
         where += " AND file_type = ?"

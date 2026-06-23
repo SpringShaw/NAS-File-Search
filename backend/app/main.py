@@ -1,4 +1,5 @@
 import os
+import sqlite3
 import hashlib
 import logging
 
@@ -6,17 +7,23 @@ from fastapi import FastAPI, Query, HTTPException
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
-from typing import Optional
 
-from .config import ensure_dirs, THUMBNAIL_DIR, FILE_CATEGORIES, HOST, PORT, NAS_HOST_PREFIX
+from .config import (
+    ensure_dirs, THUMBNAIL_DIR, FILE_CATEGORIES, IMAGE_EXTENSIONS,
+    HOST, PORT, NAS_HOST_PREFIX,
+)
 from .models import init_db, get_db
 from .indexer import indexer, generate_thumbnail, get_file_icon, get_file_category
 from .search import search_files
+from .security import APIKeyMiddleware, RateLimitMiddleware, assert_within_nas_host, safe_join
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 
 app = FastAPI(title="NAS-File-Search", version="1.0.0")
+# 注册顺序：后添加的中间件位于外层最先执行。限流置于最外层，认证在内层。
+app.add_middleware(APIKeyMiddleware)
+app.add_middleware(RateLimitMiddleware)
 
 
 @app.on_event("startup")
@@ -44,6 +51,9 @@ async def api_search(
     page: int = Query(1, ge=1),
     size: int = Query(20, ge=1, le=100),
 ):
+    # file_type 白名单校验，拒绝任意值
+    if type != "all" and type not in FILE_CATEGORIES and type != "其他":
+        raise HTTPException(status_code=400, detail="无效的文件类型")
     return search_files(q, type, page, size)
 
 
@@ -121,9 +131,13 @@ async def api_add_dir(dir_data: DirCreate):
         new_id = db.execute("SELECT last_insert_rowid()").fetchone()[0]
         db.close()
         return {"id": new_id, "path": container_path, "message": "目录已添加"}
-    except Exception as e:
+    except sqlite3.IntegrityError:
         db.close()
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=409, detail="该目录已存在")
+    except Exception:
+        db.close()
+        logger.exception("Failed to add directory")
+        raise HTTPException(status_code=500, detail="添加目录失败，请检查日志")
 
 
 @app.delete("/api/dirs/{dir_id}")
@@ -133,10 +147,21 @@ async def api_delete_dir(dir_id: int):
     if not existing:
         db.close()
         raise HTTPException(status_code=404, detail="目录不存在")
+    # 先取出该目录下文件的路径，用于清理缩略图缓存
+    files = db.execute("SELECT file_path FROM files WHERE dir_id = ?", (dir_id,)).fetchall()
     db.execute("DELETE FROM dirs WHERE id = ?", (dir_id,))
     db.execute("DELETE FROM files WHERE dir_id = ?", (dir_id,))
     db.commit()
     db.close()
+
+    # 清理已删除目录对应的缩略图缓存
+    for f in files:
+        thumb = os.path.join(THUMBNAIL_DIR, f"{hashlib.md5(f['file_path'].encode()).hexdigest()}.jpg")
+        if os.path.exists(thumb):
+            try:
+                os.remove(thumb)
+            except OSError:
+                pass
     return {"message": "目录已删除"}
 
 
@@ -155,12 +180,18 @@ async def api_index_status():
 
 @app.get("/api/thumbnail")
 async def api_thumbnail(path: str):
-    if not os.path.isfile(path):
+    # 强制限定在 /nas/host 子树内，防止任意文件读取
+    real_path = assert_within_nas_host(path)
+    if not os.path.isfile(real_path):
         raise HTTPException(status_code=404, detail="文件不存在")
+    # 仅允许图片扩展名
+    ext = os.path.splitext(real_path)[1].lower().lstrip(".")
+    if ext not in IMAGE_EXTENSIONS:
+        raise HTTPException(status_code=400, detail="仅支持图片文件")
     path_hash = hashlib.md5(path.encode()).hexdigest()
     thumb_path = os.path.join(THUMBNAIL_DIR, f"{path_hash}.jpg")
     if not os.path.exists(thumb_path):
-        success = generate_thumbnail(path, thumb_path)
+        success = generate_thumbnail(real_path, thumb_path)
         if not success:
             raise HTTPException(status_code=400, detail="无法生成缩略图")
     return FileResponse(thumb_path, media_type="image/jpeg")
@@ -182,9 +213,11 @@ if os.path.isdir(STATIC_DIR):
 async def serve_frontend(full_path: str):
     if full_path.startswith("api/"):
         raise HTTPException(status_code=404)
-    static_file = os.path.join(STATIC_DIR, full_path)
-    if full_path and os.path.isfile(static_file):
-        return FileResponse(static_file)
+    # safe_join 做 realpath 越界校验，防止路径遍历读取任意文件
+    if full_path:
+        real_file = safe_join(STATIC_DIR, full_path)
+        if os.path.isfile(real_file):
+            return FileResponse(real_file)
     index_file = os.path.join(STATIC_DIR, "index.html")
     if os.path.isfile(index_file):
         return FileResponse(index_file)

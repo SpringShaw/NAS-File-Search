@@ -44,7 +44,7 @@
             <p
               v-if="file.snippet"
               class="text-xs text-gray-500 mt-1 line-clamp-2"
-              v-html="file.snippet"
+              v-html="safeSnippet(file.snippet)"
             ></p>
           </div>
 
@@ -87,6 +87,7 @@
 
 <script>
 import { computed } from 'vue'
+import DOMPurify from 'dompurify'
 
 export default {
   name: 'SearchResults',
@@ -130,7 +131,9 @@ export default {
       }
     }
 
-    return { totalPages, formatSize, formatTime }
+    const safeSnippet = (snippet) => (snippet ? DOMPurify.sanitize(snippet) : '')
+
+    return { totalPages, formatSize, formatTime, safeSnippet }
   },
 }
 </script>

@@ -8,6 +8,16 @@ THUMBNAIL_DIR = os.path.join(DATA_DIR, "thumbnails")
 HOST = os.environ.get("HOST", "0.0.0.0")
 PORT = int(os.environ.get("PORT", "8083"))
 
+# --- 安全配置 ---
+# API Key 认证（可选）：留空则不启用认证，适合纯内网/已有反向代理鉴权的场景；
+# 配置后所有 /api/* 请求需携带 X-API-Key 请求头。公网部署强烈建议设置一个长随机串。
+API_KEY = os.environ.get("API_KEY", "").strip()
+# 速率限制：每个 IP 在 RATE_WINDOW 秒内最多 RATE_LIMIT 次 /api 请求；0 表示禁用
+RATE_LIMIT = int(os.environ.get("RATE_LIMIT", "120"))
+RATE_WINDOW = int(os.environ.get("RATE_WINDOW", "60"))
+# 缩略图防解压炸弹：允许处理的图片像素数上限
+MAX_IMAGE_PIXELS = 25_000_000
+
 THUMBNAIL_SIZE = (200, 200)
 FULLTEXT_MAX_SIZE = 5 * 1024 * 1024  # 5MB max for fulltext indexing
 MAX_FILE_SIZE = 100 * 1024 * 1024  # 100MB
