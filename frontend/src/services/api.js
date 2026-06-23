@@ -1,3 +1,5 @@
+import { t } from '../i18n.js'
+
 const API_BASE = ''
 
 function getApiKey() {
@@ -28,13 +30,13 @@ async function request(url, options = {}) {
   // 后端启用了 API Key 认证但本地未配置或配置错误：提示输入并重试一次
   if (res.status === 401 && !prompting && !options._retried) {
     prompting = true
-    const key = window.prompt('此服务启用了 API Key 认证，请输入 API Key：')
+    const key = window.prompt(t('apiKeyPromptRetry'))
     prompting = false
     if (key) {
       setApiKey(key.trim())
       return request(url, { ...options, _retried: true })
     }
-    throw new Error('需要有效的 API Key')
+    throw new Error(t('apiKeyRequired'))
   }
 
   if (!res.ok) {

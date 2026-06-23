@@ -10,7 +10,7 @@
           ref="inputEl"
           v-model="localQuery"
           type="text"
-          placeholder="搜索文件名、路径、内容..."
+          :placeholder="$t('searchPlaceholder')"
           class="flex-1 text-lg text-[#1d1d1f] placeholder-gray-400 outline-none bg-transparent"
           @input="onInput"
           @keydown.enter="onSearch"
@@ -27,7 +27,7 @@
       </div>
     </div>
     <p v-if="!query" class="text-center text-xs text-gray-400 mt-2">
-      支持文件名、路径搜索 · 文本文件支持全文内容搜索
+      {{ $t('searchHint') }}
     </p>
   </div>
 </template>

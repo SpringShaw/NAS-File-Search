@@ -7,9 +7,9 @@
     <div class="bg-white rounded-2xl shadow-xl w-full max-w-lg overflow-hidden fade-in-up">
       <!-- Header -->
       <div class="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
-        <h2 class="text-lg font-semibold text-[#1d1d1f]">⚙️ 设置</h2>
+        <h2 class="text-lg font-semibold text-[#1d1d1f]">{{ $t('settingsTitle') }}</h2>
         <button @click="$emit('close')" class="w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 text-gray-500 hover:bg-gray-200 transition">
-          ✕
+          {{ $t('close') }}
         </button>
       </div>
 
@@ -17,12 +17,12 @@
       <div class="px-5 py-4 max-h-[60vh] overflow-y-auto">
         <!-- Add Directory -->
         <div class="mb-4">
-          <label class="text-sm font-medium text-[#1d1d1f] block mb-2">添加搜索目录</label>
+          <label class="text-sm font-medium text-[#1d1d1f] block mb-2">{{ $t('addSearchDir') }}</label>
           <div class="flex gap-2">
             <input
               v-model="newDir"
               type="text"
-              placeholder="/nas/host/photos"
+              :placeholder="$t('addPlaceholder')"
               class="flex-1 px-3 py-2 rounded-xl border border-gray-200 text-sm outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-400/20 transition"
               @keydown.enter="addDir"
             />
@@ -31,7 +31,7 @@
               :disabled="!newDir.trim() || adding"
               class="px-4 py-2 rounded-xl bg-[#1d1d1f] text-white text-sm font-medium hover:bg-[#333] transition disabled:opacity-50"
             >
-              {{ adding ? '...' : '添加' }}
+              {{ adding ? $t('adding') : $t('addBtn') }}
             </button>
           </div>
           <p v-if="addError" class="text-xs text-red-500 mt-1">{{ addError }}</p>
@@ -39,9 +39,9 @@
 
         <!-- Directory List -->
         <div>
-          <label class="text-sm font-medium text-[#1d1d1f] block mb-2">搜索目录列表</label>
+          <label class="text-sm font-medium text-[#1d1d1f] block mb-2">{{ $t('dirListLabel') }}</label>
           <div v-if="dirs.length === 0" class="text-center py-6 text-gray-400 text-sm">
-            暂无搜索目录，请添加
+            {{ $t('noDirs') }}
           </div>
           <div v-else class="space-y-2">
             <div
@@ -55,7 +55,7 @@
                 @click="deleteDir(dir.id)"
                 class="w-6 h-6 flex items-center justify-center rounded-full text-gray-400 hover:bg-red-50 hover:text-red-500 transition text-xs"
               >
-                🗑️
+                {{ $t('deleteDir') }}
               </button>
             </div>
           </div>
@@ -63,19 +63,19 @@
 
         <!-- API Key 设置 -->
         <div class="mt-4 pt-4 border-t border-gray-100">
-          <label class="text-sm font-medium text-[#1d1d1f] block mb-2">🔒 API Key</label>
+          <label class="text-sm font-medium text-[#1d1d1f] block mb-2">{{ $t('apiKeyLabel') }}</label>
           <div class="flex items-center gap-2">
             <span class="flex-1 text-xs" :class="apiKeySet ? 'text-gray-500' : 'text-gray-400'">
-              {{ apiKeySet ? '已设置（访问受保护）' : '未设置（未启用认证）' }}
+              {{ apiKeySet ? $t('apiKeySet') : $t('apiKeyUnset') }}
             </span>
             <button @click="editApiKey" class="px-3 py-1 text-xs bg-gray-100 rounded-lg hover:bg-gray-200 transition">
-              {{ apiKeySet ? '修改' : '设置' }}
+              {{ apiKeySet ? $t('apiKeyEdit') : $t('apiKeySetBtn') }}
             </button>
             <button v-if="apiKeySet" @click="clearApiKey" class="px-3 py-1 text-xs bg-gray-100 rounded-lg hover:bg-red-50 hover:text-red-500 transition">
-              清除
+              {{ $t('apiKeyClear') }}
             </button>
           </div>
-          <p class="text-xs text-gray-400 mt-1">仅当服务端配置了 API_KEY 环境变量时才生效</p>
+          <p class="text-xs text-gray-400 mt-1">{{ $t('apiKeyHint') }}</p>
         </div>
       </div>
     </div>
@@ -83,13 +83,14 @@
 </template>
 
 <script>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, getCurrentInstance } from 'vue'
 import { api, setApiKey } from '../services/api.js'
 
 export default {
   name: 'SettingsPanel',
   emits: ['close', 'dirs-updated'],
   setup(props, { emit }) {
+    const { proxy } = getCurrentInstance()
     const dirs = ref([])
     const newDir = ref('')
     const adding = ref(false)
@@ -115,7 +116,7 @@ export default {
       }
     }
     const editApiKey = () => {
-      const key = window.prompt('请输入 API Key：')
+      const key = window.prompt(proxy.$t('apiKeyPrompt'))
       if (key !== null) {
         setApiKey(key.trim())
         refreshApiKeySet()
@@ -144,7 +145,7 @@ export default {
         await fetchDirs()
         emit('dirs-updated')
       } catch (e) {
-        addError.value = e.message || '添加失败'
+        addError.value = e.message || proxy.$t('addFailed')
       } finally {
         adding.value = false
       }

@@ -2,18 +2,18 @@
   <div>
     <div v-if="loading" class="text-center py-12">
       <div class="inline-block w-6 h-6 border-2 border-gray-300 border-t-blue-500 rounded-full animate-spin"></div>
-      <p class="text-sm text-gray-400 mt-2">搜索中...</p>
+      <p class="text-sm text-gray-400 mt-2">{{ $t('searching') }}</p>
     </div>
 
     <div v-else-if="query && results.length === 0" class="text-center py-12">
       <p class="text-4xl mb-3">🔍</p>
-      <p class="text-gray-500">未找到匹配 "{{ query }}" 的文件</p>
+      <p class="text-gray-500">{{ $t('noResult', { query }) }}</p>
     </div>
 
     <div v-else-if="results.length > 0">
       <div class="flex items-center justify-between mb-3">
         <p class="text-sm text-gray-500">
-          找到 <span class="font-medium text-[#1d1d1f]">{{ total }}</span> 个结果
+          {{ $t('foundResults', { total }) }}
         </p>
       </div>
 
@@ -63,7 +63,7 @@
           :disabled="page <= 1"
           class="px-3 py-1.5 rounded-full text-sm bg-white border border-gray-200 text-gray-600 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition"
         >
-          ← 上一页
+          {{ $t('prevPage') }}
         </button>
         <span class="text-sm text-gray-500">{{ page }} / {{ totalPages }}</span>
         <button
@@ -71,7 +71,7 @@
           :disabled="page >= totalPages"
           class="px-3 py-1.5 rounded-full text-sm bg-white border border-gray-200 text-gray-600 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition"
         >
-          下一页 →
+          {{ $t('nextPage') }}
         </button>
       </div>
     </div>
@@ -79,15 +79,16 @@
     <!-- Empty state when no query -->
     <div v-else class="text-center py-16">
       <p class="text-5xl mb-4">🔍</p>
-      <p class="text-gray-500 text-lg">输入关键词开始搜索</p>
-      <p class="text-gray-400 text-sm mt-1">支持文件名、路径、文件内容搜索</p>
+      <p class="text-gray-500 text-lg">{{ $t('noQueryTitle') }}</p>
+      <p class="text-gray-400 text-sm mt-1">{{ $t('noQueryHint') }}</p>
     </div>
   </div>
 </template>
 
 <script>
-import { computed } from 'vue'
+import { computed, getCurrentInstance } from 'vue'
 import DOMPurify from 'dompurify'
+import { i18n } from '../i18n.js'
 
 export default {
   name: 'SearchResults',
@@ -100,12 +101,13 @@ export default {
   },
   emits: ['page-change'],
   setup(props) {
+    const { proxy } = getCurrentInstance()
     const pageSize = 20
     const totalPages = computed(() => Math.ceil(props.total / pageSize))
 
     const formatSize = (bytes) => {
       if (!bytes) return '0 B'
-      const units = ['B', 'KB', 'MB', 'GB', 'TB']
+      const units = proxy.$t('sizeUnit')
       let i = 0
       let size = bytes
       while (size >= 1024 && i < units.length - 1) {
@@ -121,11 +123,12 @@ export default {
         const d = new Date(timestamp * 1000)
         const now = new Date()
         const diff = (now - d) / 1000
-        if (diff < 60) return '刚刚'
-        if (diff < 3600) return Math.floor(diff / 60) + '分钟前'
-        if (diff < 86400) return Math.floor(diff / 3600) + '小时前'
-        if (diff < 604800) return Math.floor(diff / 86400) + '天前'
-        return d.toLocaleDateString('zh-CN')
+        if (diff < 60) return proxy.$t('justNow')
+        if (diff < 3600) return proxy.$t('minutesAgo', { n: Math.floor(diff / 60) })
+        if (diff < 86400) return proxy.$t('hoursAgo', { n: Math.floor(diff / 3600) })
+        if (diff < 604800) return proxy.$t('daysAgo', { n: Math.floor(diff / 86400) })
+        // 超过一周用本地化日期，按当前语言选择 locale
+        return d.toLocaleDateString(i18n.lang === 'zh' ? 'zh-CN' : 'en-US')
       } catch {
         return ''
       }

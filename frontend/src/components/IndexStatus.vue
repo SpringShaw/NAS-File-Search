@@ -3,7 +3,7 @@
     <!-- Index Progress -->
     <div v-if="stats.is_indexing" class="px-4 py-3 border-b border-gray-50">
       <div class="flex items-center justify-between mb-2">
-        <span class="text-sm font-medium text-[#1d1d1f]">🔄 正在建立索引...</span>
+        <span class="text-sm font-medium text-[#1d1d1f]">{{ $t('indexing') }}</span>
         <span class="text-xs text-gray-500">{{ Math.round(stats.progress || 0) }}%</span>
       </div>
       <div class="w-full bg-gray-100 rounded-full h-1.5">
@@ -21,13 +21,13 @@
     <div class="px-4 py-3 flex items-center justify-between">
       <div class="flex items-center gap-4 text-sm text-gray-500">
         <span>
-          <span class="font-medium text-[#1d1d1f]">{{ formatNumber(stats.total_files || 0) }}</span> 个文件
+          <span class="font-medium text-[#1d1d1f]">{{ formatNumber(stats.total_files || 0) }}</span> {{ $t('filesUnit') }}
         </span>
         <span v-if="stats.dirs_count">
-          {{ stats.dirs_count }} 个目录
+          {{ stats.dirs_count }} {{ $t('dirsUnit') }}
         </span>
         <span v-if="stats.fulltext_files">
-          {{ formatNumber(stats.fulltext_files) }} 个全文索引
+          {{ formatNumber(stats.fulltext_files) }} {{ $t('fulltextUnit') }}
         </span>
       </div>
       <button
@@ -35,18 +35,21 @@
         :disabled="stats.is_indexing"
         class="text-xs px-3 py-1.5 rounded-full bg-gray-100 text-gray-600 hover:bg-gray-200 transition disabled:opacity-50 disabled:cursor-not-allowed"
       >
-        {{ stats.is_indexing ? '索引中...' : '🔄 重建索引' }}
+        {{ stats.is_indexing ? $t('indexingInProgress') : $t('rebuildIndex') }}
       </button>
     </div>
 
     <!-- Last rebuild time -->
     <div v-if="stats.last_rebuild && !stats.is_indexing" class="px-4 pb-2 text-xs text-gray-400">
-      最后索引: {{ formatTime(stats.last_rebuild) }}
+      {{ $t('lastRebuild') }}: {{ formatTime(stats.last_rebuild) }}
     </div>
   </div>
 </template>
 
 <script>
+import { getCurrentInstance } from 'vue'
+import { i18n } from '../i18n.js'
+
 export default {
   name: 'IndexStatus',
   props: {
@@ -54,8 +57,13 @@ export default {
   },
   emits: ['rebuild'],
   setup() {
+    const { proxy } = getCurrentInstance()
+
     const formatNumber = (n) => {
-      if (n >= 10000) return (n / 10000).toFixed(1) + '万'
+      if (n >= 10000) {
+        if (i18n.lang === 'zh') return (n / 10000).toFixed(1) + '万'
+        return (n / 1000).toFixed(1) + 'k'
+      }
       return n.toLocaleString()
     }
 
@@ -65,10 +73,11 @@ export default {
         const d = new Date(t)
         const now = new Date()
         const diff = (now - d) / 1000
-        if (diff < 60) return '刚刚'
-        if (diff < 3600) return Math.floor(diff / 60) + ' 分钟前'
-        if (diff < 86400) return Math.floor(diff / 3600) + ' 小时前'
-        return d.toLocaleDateString('zh-CN') + ' ' + d.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })
+        if (diff < 60) return proxy.$t('justNow')
+        if (diff < 3600) return proxy.$t('minutesAgo', { n: Math.floor(diff / 60) })
+        if (diff < 86400) return proxy.$t('hoursAgo', { n: Math.floor(diff / 3600) })
+        const locale = i18n.lang === 'zh' ? 'zh-CN' : 'en-US'
+        return d.toLocaleDateString(locale) + ' ' + d.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })
       } catch {
         return t
       }

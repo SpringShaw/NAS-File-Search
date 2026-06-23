@@ -5,18 +5,26 @@
       <div class="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
         <div class="flex items-center gap-2">
           <span class="text-2xl">🔍</span>
-          <h1 class="text-lg font-semibold text-[#1d1d1f]">NAS Searcher</h1>
+          <h1 class="text-lg font-semibold text-[#1d1d1f]">{{ $t('appTitle') }}</h1>
         </div>
         <div class="flex items-center gap-3">
           <button
             v-if="stats.total_files > 0"
             class="text-xs text-gray-500 bg-gray-100 px-3 py-1.5 rounded-full hover:bg-gray-200 transition"
           >
-            {{ formatNumber(stats.total_files) }} 个文件已索引
+            {{ $t('indexedCount', { count: formatNumber(stats.total_files) }) }}
+          </button>
+          <button
+            @click="$toggleLanguage()"
+            class="text-xs text-gray-500 bg-gray-100 px-3 py-1.5 rounded-full hover:bg-gray-200 transition font-medium"
+            :title="lang === 'zh' ? $t('languageToggleTitleEn') : $t('languageToggleTitleZh')"
+          >
+            {{ lang === 'zh' ? $t('languageToggleToEn') : $t('languageToggleToZh') }}
           </button>
           <button
             @click="showSettings = !showSettings"
             class="w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 hover:bg-gray-200 transition text-lg"
+            :title="$t('settingsTitle')"
           >
             ⚙️
           </button>
@@ -60,8 +68,9 @@
 </template>
 
 <script>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { api } from './services/api.js'
+import { i18n } from './i18n.js'
 import SearchBar from './components/SearchBar.vue'
 import TypeFilter from './components/TypeFilter.vue'
 import IndexStatus from './components/IndexStatus.vue'
@@ -140,9 +149,16 @@ export default {
     }
 
     const formatNumber = (n) => {
-      if (n >= 10000) return (n / 10000).toFixed(1) + '万'
+      if (n >= 10000) {
+        // 英文环境用 k，中文用 万
+        if (i18n.lang === 'zh') return (n / 10000).toFixed(1) + '万'
+        return (n / 1000).toFixed(1) + 'k'
+      }
       return n.toLocaleString()
     }
+
+    // 响应式语言：切换时 formatNumber 等依赖 lang 的计算自动重算
+    const lang = computed(() => i18n.lang)
 
     onMounted(() => {
       fetchStats()
@@ -150,7 +166,7 @@ export default {
 
     return {
       query, activeType, results, totalResults, page,
-      loading, showSettings, stats,
+      loading, showSettings, stats, lang,
       doSearch, onTypeChange, onPageChange, rebuildIndex, fetchStats, formatNumber,
     }
   },
